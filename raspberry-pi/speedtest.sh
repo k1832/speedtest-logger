@@ -2,18 +2,11 @@
 
 # speedtest
 json_result=`speedtest-cli --json`
-echo $json_result
+echo JSON result: $json_result
 
 # parse result
-timestamp=`echo $json_result | jq -r ".timestamp"`
-ping=`echo $json_result | jq -r ".ping"`
-download=`echo $json_result | jq -r ".download"`
-upload=`echo $json_result | jq -r ".upload"`
-echo $timestamp
-echo $ping
-echo $download
-echo $upload
-result="$timestamp,$ping,$download,$upload"
+result=`echo $json_result | jq -r '.timestamp + "," + (.ping|tostring) + "," + (.download|tostring) + "," + (.upload|tostring)'`
+echo Parsed result: $result
 
 # post to google apps script
 # SPEEDTEST_LOGGER_URL (web app URL of Google Apps Script) should be set in bash
