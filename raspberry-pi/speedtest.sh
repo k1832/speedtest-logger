@@ -17,6 +17,6 @@ result="$timestamp,$ping,$download,$upload"
 
 # post to google apps script
 # SPEEDTEST_LOGGER_URL (web app URL of Google Apps Script) should be set in bash
-# SPEEDTEST_LOGGER_URL="https://script.google.com/macros/s/xxx/exec"
+# SPEEDTEST_LOGGER_URL=https://script.google.com/macros/s/xxx/exec
 json="'{\"data\": \"$result\"}'"
 eval "curl --data ${json} --header 'Content-Type: application/json' -L $SPEEDTEST_LOGGER_URL"
