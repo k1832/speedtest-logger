@@ -1,5 +1,5 @@
 # speedtest-logger
-## 実際のログ（現在非公開）
+## 実際のログ
 https://docs.google.com/spreadsheets/d/11nWYSUnr6VswYhoDquz1GJVZFRifad-XMFQA9ZyUJn8/edit?usp=sharing  
 ## ラズパイ側の挙動
 シェルスクリプトで「スピードテスト→Google Apps ScriptにPOST」までする。cronでシェルスクリプトを定期実行。   
