@@ -17,3 +17,22 @@ https://docs.google.com/spreadsheets/d/11nWYSUnr6VswYhoDquz1GJVZFRifad-XMFQA9ZyU
 
 ## Google Apps Script側の挙動
 1. ラズパイから受け取ったデータをスプレッドシートに書き込む  
+
+## Raspberry Piの省電力化
+### Change the CPU governor for more agressive power saving
+`echo powersave | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor`
+
+### Disable unused hardware
+
+Open `sudo vim /boot/firmware/config.txt`, then add the following lines:
+```
+# Disable HDMI
+hdmi_blanking=2
+
+# Disable Wi-Fi and Bluetooth
+dtoverlay=disable-wifi
+dtoverlay=disable-bt
+```
+
+### Measure CPU temperature
+`vcgencmd measure_temp`
