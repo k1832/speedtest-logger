@@ -23,6 +23,6 @@ echo "---"
 curl -X POST \
   -H "Content-Type: application/json" \
   -d "$parsed_json" \
-  "$SPEEDTEST_LOGGER_URL" > /dev/null 2>&1
+  "$SPEEDTEST_LOGGER_URL"
 
 echo -e "\n\nUpload command finished."
