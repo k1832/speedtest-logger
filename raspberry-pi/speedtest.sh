@@ -2,7 +2,7 @@
 
 echo "Running speedtest..."
 
-json_result=$(speedtest --format json)
+json_result=$(speedtest --format json 2>/dev/null)
 
 if [ -z "$json_result" ]; then
   echo "Error: speedtest command failed or returned an empty result."
