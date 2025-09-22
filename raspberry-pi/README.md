@@ -10,7 +10,7 @@ It's a simple way to track your internet connection's performance over time.
 
 The script performs three main actions:
 
-1.  **Runs Speed Test**: It uses `speedtest-cli` to measure download speed, upload speed, and ping, outputting the results in JSON format.
+1.  **Runs Speed Test**: It uses the `speedtest` CLI to measure download speed, upload speed, and ping, outputting the results in JSON format.
 2.  **Parses Data**: It uses `jq` to parse the JSON output and formats the key metrics into a single, comma-separated string: `timestamp,ping,download,upload`.
 3.  **Posts Data**: It sends this data string in a JSON payload to a specified Google Apps Script Web App URL using `curl`.
 
@@ -20,9 +20,8 @@ The script performs three main actions:
 
 Before you can run this script, you need to have the following command-line tools installed:
 
-* **`speedtest-cli`**: The official Speedtest.net CLI.
-    * *Installation (Ubuntu/Debian)*: `sudo apt-get install speedtest-cli`
-    * *Installation (macOS)*: `brew install speedtest-cli`
+* **`speedtest`**: The official Speedtest.net CLI.
+    * *Installation*: Follow https://www.speedtest.net/ja/apps/cli
 * **`jq`**: A lightweight and flexible command-line JSON processor.
     * *Installation (Ubuntu/Debian)*: `sudo apt-get install jq`
     * *Installation (macOS)*: `brew install jq`

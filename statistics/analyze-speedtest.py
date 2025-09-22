@@ -1,142 +1,182 @@
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import argparse
+import seaborn as sns
 
-def analyze_internet_speed(file_path="speedtest-log.csv", output_mode='save'):
-    """
-    Analyzes internet speed data, finds the slowest time intervals,
-    and visualizes overall and hourly performance.
-
-    Args:
-        file_path (str): The path to the CSV file.
-        output_mode (str): 'save' to save plots, 'show' to display them.
-    """
+def load_and_prepare_data(file_path: str) -> pd.DataFrame | None:
+    """Loads, cleans, and prepares the speedtest data from a CSV file."""
+    print("🔄 Loading and preparing your data...")
     try:
-        # --- 1. Load and Prepare Data ---
-        print(f"🔄 Attempting to load data from '{file_path}'...")
         df = pd.read_csv(file_path, thousands=',')
-        print("✅ Successfully loaded the CSV file.")
-
-        print("🔄 Cleaning and preparing data...")
-        df.rename(columns={
-            'timestamp (in UTC)': 'Timestamp',
-            'ping (ms)': 'Ping Latency',
-            'download (bps)': 'Download Speed (bps)',
-            'upload (bps)': 'Upload Speed (bps)'
-        }, inplace=True)
-        df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-        if 'comment' in df.columns:
-            df = df.drop(columns=['comment'])
-        df['Download Speed (Mbps)'] = df['Download Speed (bps)'] / 1_000_000
-        df['Upload Speed (Mbps)'] = df['Upload Speed (bps)'] / 1_000_000
-        df.set_index('Timestamp', inplace=True)
-        df.sort_index(inplace=True)
-        print("✅ Data preparation complete.")
-
-        # --- 2. Find Slowest Intervals (NEW ANALYSIS) ---
-        print("\n🔄 Finding the slowest 15-minute intervals...")
-        # Resample data into 15-minute bins and calculate the mean for each bin
-        resampled_df = df.resample('15T').mean()
-        # Drop intervals where no tests were run (NaN values)
-        resampled_df.dropna(inplace=True)
-        # Sort by the slowest download speed to find the worst periods
-        slowest_intervals = resampled_df.sort_values(by='Download Speed (Mbps)', ascending=True)
-        print("\n--- 🎯 Top 10 Slowest 15-Minute Intervals ---")
-        print(slowest_intervals.head(10))
-        print("-------------------------------------------\n")
-
-
-        # --- 3. Overall Statistical Analysis ---
-        stats_df = df[['Ping Latency', 'Download Speed (Mbps)', 'Upload Speed (Mbps)']]
-        print("\n--- Overall Performance Statistics ---")
-        print(stats_df.describe())
-        print("-------------------------------------\n")
-
-        # --- 4. Time-of-Day Analysis ---
-        print("🔄 Analyzing performance by hour of day...")
-        df['Hour'] = df.index.hour
-        hourly_stats = df.groupby('Hour')[['Download Speed (Mbps)', 'Upload Speed (Mbps)', 'Ping Latency']].mean()
-        print("\n--- Average Performance by Hour ---")
-        print(hourly_stats)
-        print("-------------------------------------\n")
-
-        # --- 5. Visualization ---
-        print("🔄 Generating plots...")
-        # (The code for all three plots remains the same as the last version)
-        plt.style.use('seaborn-v0_8-whitegrid')
-
-        # Plot 1: Time Series
-        fig1, ax1 = plt.subplots(figsize=(14, 7))
-        # ... (full plotting code)
-        fig1.autofmt_xdate()
-        ax1.set_title('Internet Latency and Speed Over Time')
-        ax1.plot(df.index, df['Ping Latency'], color='r', alpha=0.8, label='Ping Latency (ms)')
-        ax1.set_xlabel('Date and Time')
-        ax1.set_ylabel('Ping Latency (ms)', color='r')
-        ax1.tick_params(axis='y', labelcolor='r')
-        ax2 = ax1.twinx()
-        ax2.plot(df.index, df['Download Speed (Mbps)'], color='g', label='Download Speed (Mbps)')
-        ax2.plot(df.index, df['Upload Speed (Mbps)'], color='b', label='Upload Speed (Mbps)')
-        ax2.set_ylabel('Speed (Mbps)', color='g')
-        ax2.tick_params(axis='y', labelcolor='g')
-        ax2.set_ylim(bottom=0)
-        lines, labels = ax1.get_legend_handles_labels()
-        lines2, labels2 = ax2.get_legend_handles_labels()
-        ax2.legend(lines + lines2, labels + labels2, loc='upper left')
-
-        # Plot 2: Distributions
-        fig2, axes = plt.subplots(1, 3, figsize=(18, 5))
-        # ... (full plotting code)
-        df['Ping Latency'].plot(kind='hist', bins=30, ax=axes[0], title='Ping Latency Distribution', color='red', alpha=0.7)
-        axes[0].set_xlabel("Latency (ms)")
-        df['Download Speed (Mbps)'].plot(kind='hist', bins=30, ax=axes[1], title='Download Speed Distribution', color='green', alpha=0.7)
-        axes[1].set_xlabel("Speed (Mbps)")
-        df['Upload Speed (Mbps)'].plot(kind='hist', bins=30, ax=axes[2], title='Upload Speed Distribution', color='blue', alpha=0.7)
-        axes[2].set_xlabel("Speed (Mbps)")
-        fig2.tight_layout()
-
-        # Plot 3: Hourly Performance Bar Chart
-        fig3, ax_speed = plt.subplots(figsize=(14, 7))
-        # ... (full plotting code)
-        ax_speed.set_title('Average Internet Performance by Hour of Day')
-        ax_speed.set_xlabel('Hour of Day (0-23)')
-        ax_speed.set_ylabel('Average Speed (Mbps)', color='tab:blue')
-        hourly_stats['Download Speed (Mbps)'].plot(kind='bar', ax=ax_speed, position=0, width=0.4, color='tab:green', label='Download Speed')
-        hourly_stats['Upload Speed (Mbps)'].plot(kind='bar', ax=ax_speed, position=1, width=0.4, color='tab:blue', label='Upload Speed')
-        ax_speed.tick_params(axis='y', labelcolor='tab:blue')
-        ax_speed.grid(axis='y')
-        ax_ping = ax_speed.twinx()
-        ax_ping.set_ylabel('Average Ping Latency (ms)', color='tab:red')
-        ax_ping.plot(hourly_stats.index, hourly_stats['Ping Latency'], color='tab:red', marker='o', linestyle='--', label='Ping Latency')
-        ax_ping.tick_params(axis='y', labelcolor='tab:red')
-        ax_speed.set_xticks(range(24))
-        ax_speed.set_xticklabels(range(24))
-        lines, labels = ax_speed.get_legend_handles_labels()
-        lines2, labels2 = ax_ping.get_legend_handles_labels()
-        ax_ping.legend(lines + lines2, labels + labels2, loc='upper left')
-        fig3.tight_layout()
-
-        # --- 6. Output ---
-        if output_mode == 'show':
-            print("🖥️ Displaying interactive plots. Close the plot windows to exit.")
-            plt.show()
-        else:
-            fig1.savefig('internet_performance_over_time.png')
-            print("✅ Saved plot: 'internet_performance_over_time.png'")
-            fig2.savefig('internet_speed_distributions.png')
-            print("✅ Saved plot: 'internet_speed_distributions.png'")
-            fig3.savefig('hourly_performance.png')
-            print("✅ Saved plot: 'hourly_performance.png'")
-
     except FileNotFoundError:
-        print(f"❌ Error: The file '{file_path}' was not found.")
+        print(f"❌ ERROR: File not found at '{file_path}'.")
+        return None
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f"❌ An error occurred while reading the file: {e}")
+        return None
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Analyze Internet Speed Test Logs.")
-    parser.add_argument('--output', type=str, choices=['save', 'show'], default='save', help="'save' plots as files or 'show' them interactively.")
-    parser.add_argument('--file', type=str, default='speedtest-log.csv', help="Path to the speedtest CSV log file.")
-    args = parser.parse_args()
-    analyze_internet_speed(file_path=args.file, output_mode=args.output)
+    df.rename(columns={
+        'timestamp (UTC)': 'timestamp_utc',
+        'ping (ms)': 'ping',
+        'download (Mbps)': 'download_mbps',
+        'upload (Mbps)': 'upload_mbps'
+    }, inplace=True)
+
+    # Define the columns that should be numeric
+    numeric_cols = ['ping', 'download_mbps', 'upload_mbps']
+
+    # Check for required columns AFTER renaming
+    required_cols = ['timestamp_utc'] + numeric_cols
+    if not all(col in df.columns for col in required_cols):
+        missing = [col for col in required_cols if col not in df.columns]
+        print(f"❌ ERROR: DataFrame is missing required columns after renaming: {missing}. Check original CSV headers.")
+        return None
+
+    df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors='coerce')
+    df.dropna(subset=numeric_cols, inplace=True)
+
+    if df.empty:
+        print("❌ ERROR: No valid data remains after cleaning.")
+        return None
+
+    df.set_index(pd.to_datetime(df['timestamp_utc']).dt.tz_convert('Asia/Tokyo'), inplace=True)
+    df.index.name = 'timestamp_jst'
+
+    df['hour'] = df.index.hour
+    df['day_of_week'] = df.index.day_name()
+    df['day_type'] = df.index.to_series().apply(lambda x: 'Weekday' if x.dayofweek < 5 else 'Weekend')
+
+    print("✅ Data successfully loaded.")
+    return df
+
+def plot_performance_over_time(df: pd.DataFrame):
+    """Generates time-series plots for download, upload, and ping."""
+    print("📈 Generating Time Series Plots...")
+    fig, axes = plt.subplots(3, 1, figsize=(15, 12), sharex=True)
+    fig.suptitle('Internet Performance Over Time (JST)', fontsize=16)
+
+    sns.lineplot(data=df, x=df.index, y='download_mbps', ax=axes[0], color='blue')
+    axes[0].set(title='Download Speed Over Time', ylabel='Download Speed (Mbps)')
+    axes[0].grid(True)
+
+    sns.lineplot(data=df, x=df.index, y='upload_mbps', ax=axes[1], color='green')
+    axes[1].set(title='Upload Speed Over Time', ylabel='Upload Speed (Mbps)')
+    axes[1].grid(True)
+
+    sns.lineplot(data=df, x=df.index, y='ping', ax=axes[2], color='red')
+    axes[2].set(title='Ping Latency Over Time', ylabel='Ping (ms)', xlabel='Date and Time (JST)')
+    axes[2].grid(True)
+
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+def plot_performance_by_hour(df: pd.DataFrame):
+    """Generates bar plots of average performance for each hour of the day."""
+    print("🕔 Generating Time-of-Day Analysis Plots...")
+    hourly_stats = df.groupby('hour')[['download_mbps', 'upload_mbps', 'ping']].mean()
+
+    fig, axes = plt.subplots(3, 1, figsize=(15, 12), sharex=True)
+    fig.suptitle('Average Performance by Hour of Day (JST)', fontsize=16)
+
+    sns.barplot(data=hourly_stats, x=hourly_stats.index, y='download_mbps', ax=axes[0], hue=hourly_stats.index, palette='viridis', legend=False)
+    axes[0].set(title='Average Download Speed by Hour', ylabel='Avg. Download Speed (Mbps)')
+
+    sns.barplot(data=hourly_stats, x=hourly_stats.index, y='upload_mbps', ax=axes[1], hue=hourly_stats.index, palette='viridis', legend=False)
+    axes[1].set(title='Average Upload Speed by Hour', ylabel='Avg. Upload Speed (Mbps)')
+
+    sns.barplot(data=hourly_stats, x=hourly_stats.index, y='ping', ax=axes[2], hue=hourly_stats.index, palette='viridis', legend=False)
+    axes[2].set(title='Average Ping Latency by Hour', ylabel='Avg. Ping (ms)', xlabel='Hour of Day (0-23)')
+
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+def plot_performance_by_day_of_week(df: pd.DataFrame):
+    """Generates bar plots of average performance for each day of the week."""
+    print("🗓️ Generating Day-of-Week Analysis Plots...")
+    day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    daily_stats = df.groupby('day_of_week')[['download_mbps', 'upload_mbps', 'ping']].mean().reindex(day_order)
+
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    fig.suptitle('Average Performance by Day of Week (JST)', fontsize=16)
+
+    for i, metric in enumerate(['download_mbps', 'upload_mbps', 'ping']):
+        sns.barplot(data=daily_stats, x=daily_stats.index, y=metric, ax=axes[i], hue=daily_stats.index, palette='plasma', legend=False)
+        axes[i].set_title(f"Average {metric.replace('_mbps', ' Speed (Mbps)').replace('ping', 'Ping (ms)')} by Day")
+        axes[i].set_ylabel(f"Avg. {metric.split('_')[0].capitalize()} ({'Mbps' if 'mbps' in metric else 'ms'})")
+        axes[i].tick_params(axis='x', rotation=45)
+
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+def plot_distributions_and_correlation(df: pd.DataFrame):
+    """Generates distribution histograms and a correlation matrix heatmap."""
+    print("🧑‍🤝‍🧑 Generating Correlation and Distribution Plots...")
+
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(df[['ping', 'download_mbps', 'upload_mbps']].corr(), annot=True, cmap='coolwarm', fmt=".2f")
+    plt.title('Correlation Matrix of Performance Metrics')
+
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    fig.suptitle('Distribution of Performance Metrics', fontsize=16)
+    sns.histplot(data=df, x='download_mbps', kde=True, ax=axes[0], color='skyblue').set_title('Download Speed Distribution')
+    sns.histplot(data=df, x='upload_mbps', kde=True, ax=axes[1], color='olive').set_title('Upload Speed Distribution')
+    sns.histplot(data=df, x='ping', kde=True, ax=axes[2], color='gold').set_title('Ping Latency Distribution')
+
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+def plot_weekday_vs_weekend_performance(df: pd.DataFrame):
+    """Generates line and heatmaps comparing weekday and weekend performance."""
+    print("👨‍💻 Generating Weekday vs. Weekend Hourly Plots...")
+    cross_stats = df.groupby(['day_type', 'hour'])[['download_mbps', 'ping']].mean().reset_index()
+
+    fig, axes = plt.subplots(2, 1, figsize=(15, 10), sharex=True)
+    fig.suptitle('Weekday vs. Weekend Performance by Hour', fontsize=16)
+
+    sns.lineplot(data=cross_stats, x='hour', y='download_mbps', hue='day_type', ax=axes[0], marker='o')
+    axes[0].set(title='Average Download Speed', ylabel='Download Speed (Mbps)')
+    axes[0].grid(True)
+
+    sns.lineplot(data=cross_stats, x='hour', y='ping', hue='day_type', ax=axes[1], marker='o')
+    axes[1].set(title='Average Ping Latency', ylabel='Ping (ms)', xlabel='Hour of Day (JST)')
+    axes[1].grid(True)
+
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+    plt.figure(figsize=(12, 6))
+    heatmap_data = cross_stats.pivot(index='day_type', columns='hour', values='download_mbps')
+    sns.heatmap(heatmap_data, annot=True, fmt=".1f", cmap="rocket_r", linewidths=.5)
+    plt.title('Heatmap of Average Download Speed (Mbps) by Hour and Day Type')
+    plt.xlabel('Hour of Day (JST)')
+    plt.ylabel('')
+    plt.tight_layout()
+
+def analyze_internet_speed(file_path: str):
+    """Main function to run the complete analysis workflow."""
+    df = load_and_prepare_data(file_path)
+    if df is None:
+        return
+
+    print("-" * 50)
+    print("📊 DESCRIPTIVE STATISTICS")
+    print(df[['ping', 'download_mbps', 'upload_mbps']].describe())
+    print("-" * 50)
+
+    plot_performance_over_time(df)
+    plot_performance_by_hour(df)
+    plot_performance_by_day_of_week(df)
+    plot_distributions_and_correlation(df)
+    plot_weekday_vs_weekend_performance(df)
+
+    print("\n✅ Analysis complete. Displaying all plots now...")
+    plt.show()
+
+def main():
+    """Defines the file path and initiates the analysis."""
+    try:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    except NameError:
+        base_path = os.getcwd()
+
+    data_dir_path = os.path.join(base_path, "data")
+    file_path = os.path.join(data_dir_path, "speedtest-log.csv")
+    analyze_internet_speed(file_path)
+
+if __name__ == "__main__":
+    main()
