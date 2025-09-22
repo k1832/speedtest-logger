@@ -24,7 +24,7 @@ def load_data(use_local_csv: bool) -> pd.DataFrame | None:
             st.success("✅ Successfully loaded data from local CSV.")
             return df
         except FileNotFoundError:
-            st.error(f"❌ ERROR: Local file not found at '{file_path}'. Please check the path.")
+            st.error(f"❌ ERROR: Local file not found at '{file_path}'. Please check the path. \nNote: This option does not work on the streamlit website.")
             return None
         except Exception as e:
             st.error(f"❌ An error occurred while reading the local CSV file: {e}")
@@ -199,7 +199,7 @@ def main():
     st.sidebar.header("⚙️ Data Source Configuration")
     use_local = st.sidebar.toggle(
         "Use Local CSV File",
-        value=True,
+        value=False,
         help="If on, data will be loaded from `data/speedtest-log.csv`. If off, data will be fetched from Google Sheets."
     )
 
