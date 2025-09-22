@@ -16,7 +16,7 @@ def load_data(use_local_csv: bool) -> pd.DataFrame | None:
         st.info(" sourcing data from local CSV file...")
 
         base_path = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(base_path, "data", "generated_speed_test_data.csv")
+        file_path = os.path.join(base_path, "data", "speedtest-log.csv")
         try:
             # Assumes the CSV is in a 'data' subfolder
             # You can change 'data/speedtest-log.csv' to your file's path
