@@ -1,80 +1,104 @@
-Of course. Here is the updated `README.md` that includes the latest analysis features for identifying hourly patterns and the slowest specific time intervals.
+# 📊 Internet Speed Test Dashboard
+
+An interactive web dashboard built with **Streamlit** to analyze and visualize internet speed test data. This application can pull data live from a **Google Sheet** or use a **local CSV file** for analysis, providing a comprehensive overview of your internet performance.
 
 -----
 
-# 📊 Internet Speed Test Analyzer
+## ✨ Features
 
-A Python script to analyze and visualize internet speed test data from a CSV file. It identifies the slowest connection intervals, summarizes performance by hour of day, and generates detailed plots.
+  * **Dual Data Sources**: Seamlessly switch between fetching live data from Google Sheets and using a local CSV file for testing.
+  * **Time Series Analysis**: View download, upload, and ping metrics over time to spot trends.
+  * **Hourly & Daily Patterns**: Analyze average performance by hour of the day and day of the week to identify peak times or recurring slowdowns.
+  * **Weekday vs. Weekend Comparison**: Compare performance trends between weekdays and weekends using line charts and heatmaps.
+  * **Distributions & Correlations**: Understand the statistical distribution of your speeds and see how the different metrics relate to each other.
+  * **Interactive UI**: A clean, web-based interface that requires no command-line arguments to run.
 
 -----
 
 ## ⚙️ Setup
 
-1.  **Install dependencies**:
-    ```bash
-    pip install pandas matplotlib
+Follow these steps to get the dashboard running on your local machine.
+
+### 1\. Clone the Repository & Install Dependencies
+
+First, clone the project and install the required Python libraries from `requirements.txt`.
+
+```bash
+# It's recommended to use a virtual environment
+python -m venv venv
+source venv/bin/activate # On Windows use `venv\Scripts\activate`
+
+pip install -r requirements.txt
+```
+
+### 2\. Configure Your Data Source
+
+You can use a local CSV file or connect to a Google Sheet.
+
+#### **Option A: Local CSV File (for quick testing)**
+
+1.  Create a folder named `data` in the root of your project directory.
+2.  Place your speedtest log file inside it and name it `speedtest-log.csv`.
+
+#### **Option B: Google Sheets (for live data)**
+
+1.  **Enable Google APIs**: Go to the [Google Cloud Console](https://console.cloud.google.com/), create a project, and enable the **Google Drive API** and **Google Sheets API**.
+
+2.  **Create a Service Account**: In the "Credentials" section, create a service account, generate a **JSON key**, and download it.
+
+3.  **Share Your Sheet**: Open the downloaded JSON key and find the `client_email`. Share your Google Sheet with this email address, giving it at least "Viewer" permissions.
+
+4.  **Create a Secrets File**:
+
+      * In your project directory, create a new folder: `.streamlit`.
+      * Inside `.streamlit`, create a file named `secrets.toml`.
+      * Copy the entire content of the downloaded JSON key file and paste it into `secrets.toml` under the `[gcp_service_account]` heading. It should look like this:
+
+    <!-- end list -->
+
+    ```toml
+    [gcp_service_account]
+    type = "service_account"
+    project_id = "your-gcp-project-id"
+    private_key_id = "your-private-key-id"
+    private_key = "-----BEGIN PRIVATE KEY-----\n...your-private-key...\n-----END PRIVATE KEY-----\n"
+    client_email = "your-service-account-email@...gserviceaccount.com"
+    client_id = "your-client-id"
+    # ... and so on for all fields in the JSON file
     ```
-2.  **Place your data file** (`speedtest-log.csv`) in the same directory as the script.
 
 -----
 
-## ▶️ Usage
+## ▶️ Running the Dashboard
 
-Run the script from your terminal.
+Once the setup is complete, run the application from your terminal:
 
-  * **To save the plots as PNG files**:
-    ```bash
-    python analyze_speedtest.py
-    ```
-  * **To display interactive plot windows**:
-    ```bash
-    python analyze_speedtest.py --output show
-    ```
-  * **To specify a different CSV file**:
-    ```bash
-    python analyze_speedtest.py --file "path/to/your/data.csv"
-    ```
+```bash
+streamlit run dashboard.py
+```
+
+Your web browser will automatically open with the dashboard.
 
 -----
 
-## 📋 Example Output
+## 🚀 Using the Dashboard
 
-### Console
+The dashboard will load and display all the analysis plots.
 
-The script prints several summaries to your terminal: a "Top 10" list of the slowest intervals, an hourly performance breakdown, and overall statistics.
+  * **Switching Data Sources**: Use the toggle switch in the sidebar to alternate between loading data from your **local CSV file** and fetching live data from **Google Sheets**.
+
+-----
+
+## 📁 Project Structure
+
+Ensure your project files are organized as follows for the script to work correctly:
 
 ```
---- 🎯 Top 10 Slowest 15-Minute Intervals ---
-                     Ping Latency  Download Speed (Mbps)  Upload Speed (Mbps)
-Timestamp
-2021-10-02 11:30:00          23.0              78.082035           143.149958
-2021-12-05 06:15:00          18.0              83.136456            21.932975
-2021-10-17 10:15:00          18.0              85.645999           128.971201
-... (and so on)
--------------------------------------------
-
---- Average Performance by Hour ---
-      Download Speed (Mbps)  Upload Speed (Mbps)  Ping Latency
-Hour
-0                  145.451368           169.354378     19.533333
-1                  146.544254           164.444772     20.200000
-2                  144.333202           171.011488     19.428571
-... (and so on)
--------------------------------------
-
---- Overall Performance Statistics ---
-       Ping Latency  Download Speed (Mbps)  Upload Speed (Mbps)
-count    356.000000             356.000000           356.000000
-mean      20.112360             141.082531           159.261825
-std        3.511529              16.294711            41.258169
-min       15.000000              78.082035            21.932975
-... (and so on)
+.
+├── .streamlit/
+│   └── secrets.toml    # For Google Sheets credentials (DO NOT COMMIT TO GIT)
+├── data/
+│   └── speedtest-log.csv # Your local CSV data
+├── dashboard.py          # The main Streamlit application script
+└── requirements.txt      # Project dependencies
 ```
-
-### Generated Files (`--output save`)
-
-The script will generate three image files:
-
-1.  **`internet_performance_over_time.png`**: A line graph showing your ping, download, and upload measurements over the entire time period.
-2.  **`internet_speed_distributions.png`**: A set of three histograms showing the frequency of different values for your ping, download, and upload speeds.
-3.  **`hourly_performance.png`**: A bar chart showing the average internet speed and latency for each hour of the day, helping you to easily spot daily patterns.
