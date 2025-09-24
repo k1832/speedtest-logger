@@ -21,9 +21,7 @@ def load_data(use_local_csv: bool) -> pd.DataFrame | None:
 
     data_source_log_prefix = "Sourcing data from"
     if use_local_csv:
-        # --- LOAD FROM LOCAL CSV ---
-        msg = f"{data_source_log_prefix} local CSV file..."
-        st.info(msg)
+        st.info(f"{data_source_log_prefix} local CSV file...")
 
         base_path = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(base_path, "data", "speedtest-log.csv")
@@ -38,8 +36,7 @@ def load_data(use_local_csv: bool) -> pd.DataFrame | None:
             st.error(f"❌ An error occurred while reading the local CSV file: {e}")
             return None
     else:
-        msg = f"{data_source_log_prefix} Google Sheet..."
-        st.info(msg)
+        st.info(f"{data_source_log_prefix} Google Sheet...")
         try:
             creds_dict = st.secrets["gcp_service_account"]
             scopes = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -69,22 +66,27 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame | None:
         'download (Mbps)': 'download_mbps',
         'upload (Mbps)': 'upload_mbps'
     }, inplace=True)
+
     numeric_cols = ['ping', 'download_mbps', 'upload_mbps']
     required_cols = ['timestamp_utc'] + numeric_cols
     if not all(col in df.columns for col in required_cols):
         missing = [col for col in required_cols if col not in df.columns]
         st.error(f"❌ ERROR: DataFrame is missing required columns: {missing}. Check your data source headers.")
         return None
+
     df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors='coerce')
     df.dropna(subset=numeric_cols, inplace=True)
+
     if df.empty:
         st.error("❌ ERROR: No valid numeric data remains after cleaning.")
         return None
+
     df.set_index(pd.to_datetime(df['timestamp_utc']).dt.tz_convert('Asia/Tokyo'), inplace=True)
     df.index.name = 'timestamp_jst'
     df['hour'] = df.index.hour
     df['day_of_week'] = df.index.day_name()
     df['day_type'] = df.index.to_series().apply(lambda x: 'Weekday' if x.dayofweek < 5 else 'Weekend')
+
     return df
 
 def plot_performance_over_time(df: pd.DataFrame):
