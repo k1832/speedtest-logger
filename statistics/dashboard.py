@@ -89,6 +89,71 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame | None:
 
     return df
 
+def display_realtime_comparison(df: pd.DataFrame):
+    """Calculates and displays the last 30 mins average vs. historical average."""
+
+    realtime_window = 30
+
+    st.header(f"⏱️ Last {realtime_window} mins Performance vs. Historical Norm")
+
+    now = pd.Timestamp.now(tz='Asia/Tokyo')
+    thirty_mins_ago = now - pd.Timedelta(minutes=realtime_window)
+    recent_data = df[df.index >= thirty_mins_ago]
+
+    if recent_data.empty:
+        st.warning(f"No speedtest data recorded in the last {realtime_window} minutes.")
+        return
+
+    recent_avg = recent_data[['download_mbps', 'upload_mbps', 'ping']].mean()
+
+    current_day = now.day_name()
+    current_time_window = (thirty_mins_ago.time(), now.time())
+
+    historical_data = df[(df.index.day_name() == current_day) & (df.index < thirty_mins_ago)]
+
+    historical_match = historical_data[
+        (historical_data.index.time >= current_time_window[0]) &
+        (historical_data.index.time <= current_time_window[1])
+    ]
+
+    if historical_match.empty:
+        st.info(f"Not enough historical data for this time slot on a {current_day} to make a comparison.")
+        return
+
+    historical_avg = historical_match[['download_mbps', 'upload_mbps', 'ping']].mean()
+
+    def calculate_delta(current, historical):
+        if historical == 0:
+            return 0
+        return ((current - historical) / historical) * 100
+
+    delta_dl = calculate_delta(recent_avg['download_mbps'], historical_avg['download_mbps'])
+    delta_ul = calculate_delta(recent_avg['upload_mbps'], historical_avg['upload_mbps'])
+    delta_ping = calculate_delta(recent_avg['ping'], historical_avg['ping'])
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric(
+            label=f"Download (vs. typical {current_day})",
+            value=f"{recent_avg['download_mbps']:.1f} Mbps",
+            delta=f"{delta_dl:.1f}%",
+            delta_color="normal"
+        )
+    with col2:
+        st.metric(
+            label=f"Upload (vs. typical {current_day})",
+            value=f"{recent_avg['upload_mbps']:.1f} Mbps",
+            delta=f"{delta_ul:.1f}%",
+            delta_color="normal"
+        )
+    with col3:
+        st.metric(
+            label=f"Ping (vs. typical {current_day})",
+            value=f"{recent_avg['ping']:.1f} ms",
+            delta=f"{delta_ping:.1f}%",
+            delta_color="inverse"  # Lower ping is better, so we invert the color
+        )
+
 def plot_performance_over_time(df: pd.DataFrame):
     st.header("📈 Performance Over Time")
     fig, axes = plt.subplots(3, 1, figsize=(10, 9), sharex=True)
@@ -212,6 +277,7 @@ def main():
             st.header("🔢 Data Overview & Statistics")
             st.dataframe(processed_df[['ping', 'download_mbps', 'upload_mbps']].describe())
 
+            display_realtime_comparison(processed_df)
             plot_performance_over_time(processed_df)
             plot_weekday_vs_weekend_performance(processed_df)
             plot_performance_by_hour(processed_df)
