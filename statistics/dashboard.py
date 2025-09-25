@@ -253,8 +253,13 @@ def plot_weekday_vs_weekend_performance(df: pd.DataFrame):
 def main():
     """Main function to build and run the Streamlit app."""
     st.set_page_config(page_title="Speedtest Dashboard", layout="wide")
-    st.sidebar.header("⚙️ Data Source Configuration")
-    use_local = st.sidebar.toggle("Use Local CSV", help="If on, loads data from local CSV. If off, fetches from Google Sheets.")
+
+    if st.secrets.get("local", False):
+        st.sidebar.header("⚙️ Data Source Configuration")
+        use_local = st.sidebar.toggle("Use Local CSV", help="If on, loads data from local CSV. If off, fetches from Google Sheets.")
+    else:
+        use_local = False
+
     st.title("📊 Internet Speedtest Analysis Dashboard")
     st.markdown("This dashboard analyzes internet performance metrics logged over time.")
     raw_df = load_data(use_local_csv=use_local)
