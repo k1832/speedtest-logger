@@ -250,6 +250,10 @@ def plot_weekday_vs_weekend_performance(df: pd.DataFrame):
     ax2.set(title='Average Download Speed (Mbps) by Hour and Day Type', xlabel='Hour of Day (JST)', ylabel='')
     st.pyplot(fig2)
 
+def plot_overall_stats(df: pd.DataFrame):
+    st.header("🔢 Overall Statistics")
+    st.dataframe(df[['ping', 'download_mbps', 'upload_mbps']].describe())
+
 def main():
     """Main function to build and run the Streamlit app."""
     st.set_page_config(page_title="Speedtest Dashboard", layout="wide")
@@ -267,13 +271,12 @@ def main():
         processed_df = prepare_data(raw_df)
         if processed_df is not None:
             display_realtime_comparison(processed_df)
-            st.header("🔢 Data Overview & Statistics")
-            st.dataframe(processed_df[['ping', 'download_mbps', 'upload_mbps']].describe())
-            plot_performance_over_time(processed_df)
             plot_weekday_vs_weekend_performance(processed_df)
+            plot_performance_over_time(processed_df)
             plot_performance_by_hour(processed_df)
             plot_performance_by_day_of_week(processed_df)
             plot_distributions_and_correlation(processed_df)
+            plot_overall_stats(processed_df)
         else:
             st.error("Could not process the data after loading. Please check data format.")
     else:
