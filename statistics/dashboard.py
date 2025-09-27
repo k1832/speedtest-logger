@@ -245,7 +245,7 @@ def plot_weekday_vs_weekend_performance(df: pd.DataFrame):
 
     st.subheader("Download Speed Heatmap (Mbps)")
     heatmap_data = cross_stats.pivot(index='day_type', columns='hour', values='download_mbps')
-    fig2, ax2 = plt.subplots(figsize=(12, 2), constrained_layout=True)
+    fig2, ax2 = plt.subplots(figsize=(12, 2.5), constrained_layout=True)
     sns.heatmap(heatmap_data, annot=True, fmt=".1f", cmap="rocket_r", linewidths=.5, ax=ax2)
     ax2.set(title='Average Download Speed (Mbps) by Hour and Day Type', xlabel='Hour of Day (JST)', ylabel='')
     st.pyplot(fig2)
